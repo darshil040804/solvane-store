@@ -13,6 +13,17 @@ export function formatPrice(cents: number) {
   return priceFormat.format(cents / 100);
 }
 
+const orderDateFormat = new Intl.DateTimeFormat("en-US", { dateStyle: "long" });
+
+export function formatOrderDate(date: Date) {
+  return orderDateFormat.format(date);
+}
+
+/** Short, customer-facing order reference derived from the order id. */
+export function formatOrderNumber(orderId: string) {
+  return orderId.slice(0, 8).toUpperCase();
+}
+
 const LOW_STOCK_THRESHOLD = 3;
 
 export function getStockState(stock: number): StockState {

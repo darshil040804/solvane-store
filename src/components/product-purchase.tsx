@@ -1,37 +1,92 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition, type ReactNode } from "react";
+import { addToCart, type CartActionResult } from "@/app/cart/actions";
+import { SpinnerIcon } from "@/components/icons";
 import { WishlistButton } from "@/components/wishlist-button";
 import type { ProductSize } from "@/lib/products";
 
-// TODO: there is no cart yet; "Add to bag" only validates the size and confirms.
+function stockMessage(result: Extract<CartActionResult, { status: "insufficient-stock" }>) {
+  const { available, inCart } = result;
+  if (available <= 0) return "Sorry, this is no longer available.";
+  if (inCart >= available) {
+    return `You already have all ${available} available in your bag.`;
+  }
+  return `Only ${available} available${inCart ? `, and you have ${inCart} in your bag` : ""}.`;
+}
+
 export function ProductPurchase({
+  productId,
+  productSlug,
   productName,
   sizes,
   inStock,
 }: {
+  productId: string;
+  productSlug: string;
   productName: string;
   sizes?: ProductSize[];
   inStock: boolean;
 }) {
+  const router = useRouter();
   const [size, setSize] = useState<string | null>(null);
   const [message, setMessage] = useState<{
     tone: "error" | "success";
-    text: string;
+    content: ReactNode;
   } | null>(null);
+  const [pending, startTransition] = useTransition();
 
   const sizeOptions = sizes ?? [];
   const needsSize = sizeOptions.length > 0;
 
   function addToBag() {
+    if (pending) return;
     if (needsSize && !size) {
-      setMessage({ tone: "error", text: "Please select a size." });
+      setMessage({ tone: "error", content: "Please select a size." });
       return;
     }
-    setMessage({
-      tone: "success",
-      text: `${productName}${size ? `, size ${size},` : ""} was added to your bag.`,
+    setMessage(null);
+    startTransition(async () => {
+      let result: CartActionResult;
+      try {
+        result = await addToCart({ productId, size: needsSize ? size : null });
+      } catch {
+        setMessage({
+          tone: "error",
+          content: "We couldn't add this to your bag. Please try again.",
+        });
+        return;
+      }
+
+      switch (result.status) {
+        case "ok":
+          setMessage({
+            tone: "success",
+            content: (
+              <>
+                {productName}
+                {size ? `, size ${size},` : ""} was added to your bag.{" "}
+                <Link href="/cart" className="link">
+                  View bag
+                </Link>
+              </>
+            ),
+          });
+          break;
+        case "unauthenticated":
+          router.push(`/sign-in?redirectTo=${encodeURIComponent(`/products/${productSlug}`)}`);
+          break;
+        case "insufficient-stock":
+          setMessage({ tone: "error", content: stockMessage(result) });
+          break;
+        default:
+          setMessage({
+            tone: "error",
+            content: "We couldn't add this to your bag. Please try again.",
+          });
+      }
     });
   }
 
@@ -73,9 +128,17 @@ export function ProductPurchase({
           <button
             type="button"
             onClick={addToBag}
+            aria-busy={pending}
             className="btn btn-primary flex-1"
           >
-            Add to bag
+            {pending ? (
+              <>
+                <SpinnerIcon />
+                Adding…
+              </>
+            ) : (
+              "Add to bag"
+            )}
           </button>
         ) : (
           <button
@@ -99,7 +162,7 @@ export function ProductPurchase({
           message?.tone === "error" ? "text-danger" : "text-success"
         }`}
       >
-        {message?.text}
+        {message?.content}
       </p>
 
       {!inStock && (

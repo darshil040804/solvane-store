@@ -45,6 +45,14 @@ export function PlusIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function MinusIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M5 12h14" />
+    </Icon>
+  );
+}
+
 export function SearchIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>
@@ -67,6 +75,15 @@ export function UserIcon(props: SVGProps<SVGSVGElement>) {
     <Icon {...props}>
       <circle cx="12" cy="8" r="3.75" />
       <path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5" />
+    </Icon>
+  );
+}
+
+/** Loading indicator; spins unless the user prefers reduced motion. */
+export function SpinnerIcon({ className = "", ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon className={`motion-safe:animate-spin ${className}`} {...props}>
+      <path d="M12 3.5a8.5 8.5 0 1 1-8.5 8.5" />
     </Icon>
   );
 }

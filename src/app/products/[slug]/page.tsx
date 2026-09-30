@@ -116,6 +116,8 @@ export default async function ProductPage(
             )}
 
             <ProductPurchase
+              productId={product.id}
+              productSlug={product.slug}
               productName={product.name}
               sizes={product.sizes}
               inStock={product.stock > 0}

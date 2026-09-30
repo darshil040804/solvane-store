@@ -19,9 +19,8 @@ export default async function AdminPage() {
   });
 
   return (
-    <main className="container-content section flex flex-1 flex-col gap-10">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-2">
-        <p className="eyebrow text-ink-muted">Admin</p>
         <h1 className="text-heading">Customers</h1>
         <p className="text-body-sm text-ink-muted">
           Signed in as {user.email} · {total} {total === 1 ? "account" : "accounts"}
@@ -52,6 +51,6 @@ export default async function AdminPage() {
           </tbody>
         </table>
       </div>
-    </main>
+    </div>
   );
 }

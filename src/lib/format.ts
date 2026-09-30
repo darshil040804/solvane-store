@@ -9,8 +9,15 @@ const priceFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
+const centsPriceFormat = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+});
+
+/** Whole-dollar prices show without cents ($1,250); others show them ($199.99). */
 export function formatPrice(cents: number) {
-  return priceFormat.format(cents / 100);
+  return (cents % 100 === 0 ? priceFormat : centsPriceFormat).format(cents / 100);
 }
 
 const orderDateFormat = new Intl.DateTimeFormat("en-US", { dateStyle: "long" });
@@ -24,7 +31,8 @@ export function formatOrderNumber(orderId: string) {
   return orderId.slice(0, 8).toUpperCase();
 }
 
-const LOW_STOCK_THRESHOLD = 3;
+/** At or below this many units, stock shows as low ("Only 2 left"). */
+export const LOW_STOCK_THRESHOLD = 3;
 
 export function getStockState(stock: number): StockState {
   if (stock <= 0) return { status: "out-of-stock", label: "Out of stock" };

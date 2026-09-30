@@ -1,11 +1,14 @@
 import type { NextConfig } from "next";
+import { IMAGE_HOSTS } from "./src/lib/images";
 
 const nextConfig: NextConfig = {
   images: {
-    // Sample catalog imagery (src/lib/catalog.ts).
-    remotePatterns: [
-      { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
-    ],
+    // Product imagery; admin-entered image URLs are validated against the same list.
+    remotePatterns: IMAGE_HOSTS.map((hostname) => ({
+      protocol: "https",
+      hostname,
+      pathname: "/**",
+    })),
   },
 };
 

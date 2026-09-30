@@ -11,6 +11,7 @@ import {
   type ShippingAddress,
 } from "@/db/schema";
 import type { Cart } from "@/lib/cart";
+import { pgError } from "@/lib/pg-error";
 
 // Order lifecycle. Stock is reserved when an order is created and released
 // exactly once if it is cancelled, expires or fails. Every transition is a
@@ -24,22 +25,6 @@ export class StockUnavailableError extends Error {
   constructor() {
     super("Stock changed before checkout could start");
   }
-}
-
-/** Finds a Postgres error code/constraint through driver and ORM wrappers. */
-function pgError(error: unknown): { code?: string; constraint?: string } {
-  let current: unknown = error;
-  for (let depth = 0; current && depth < 5; depth++) {
-    const candidate = current as { code?: unknown; constraint?: unknown; cause?: unknown };
-    if (typeof candidate.code === "string") {
-      return {
-        code: candidate.code,
-        constraint: typeof candidate.constraint === "string" ? candidate.constraint : undefined,
-      };
-    }
-    current = candidate.cause;
-  }
-  return {};
 }
 
 /**

@@ -12,7 +12,15 @@ import {
 const origin = { origin: "http://localhost:3000" };
 
 test.describe("unauthenticated", () => {
-  for (const path of ["/account", "/account/orders", "/admin"]) {
+  for (const path of [
+    "/account",
+    "/account/orders",
+    "/admin",
+    "/admin/products",
+    "/admin/inventory",
+    "/admin/categories",
+    "/admin/orders",
+  ]) {
     test(`${path} redirects to sign-in`, async ({ page }) => {
       await page.goto(path);
       await expectSignInRedirect(page, path);

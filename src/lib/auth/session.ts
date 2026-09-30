@@ -31,13 +31,22 @@ export function isAdmin(user: Session["user"]) {
 }
 
 /**
- * For admin pages and actions. Signed-out users are sent to sign-in;
- * signed-in non-admins get a 404 so the admin area isn't advertised.
+ * For admin pages. Signed-out users are sent to sign-in; signed-in
+ * non-admins get a 404 so the admin area isn't advertised.
  */
 export async function requireAdmin(returnTo = "/admin") {
   const session = await requireSession(returnTo);
   if (!isAdmin(session.user)) notFound();
   return session;
+}
+
+/**
+ * For admin server actions and route handlers, which return a result instead
+ * of redirecting: the session if the caller is an admin, otherwise null.
+ */
+export async function getAdminSession() {
+  const session = await getSession();
+  return session && isAdmin(session.user) ? session : null;
 }
 
 /** Only same-origin paths are allowed as post-auth redirect targets. */

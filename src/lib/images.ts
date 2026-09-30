@@ -3,6 +3,13 @@ export type Photo = {
   alt: string;
 };
 
+/**
+ * Hosts next/image may load product photos from (https only). next.config.ts
+ * builds its remotePatterns from this list and the admin validates image URLs
+ * against it, so the two can't drift apart.
+ */
+export const IMAGE_HOSTS = ["images.unsplash.com"];
+
 export function unsplash(id: string, alt: string, width = 1600): Photo {
   return {
     src: `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${width}&q=80`,

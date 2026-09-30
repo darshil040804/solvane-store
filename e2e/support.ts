@@ -40,6 +40,11 @@ export async function signIn(page: Page, email: string, password = PASSWORD, pat
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
+export async function signInAsAdmin(page: Page) {
+  await signIn(page, ADMIN_EMAIL);
+  await expect(page).toHaveURL("/account");
+}
+
 export async function expectSignInRedirect(page: Page, from: string) {
   await expect(page).toHaveURL(`/sign-in?redirectTo=${encodeURIComponent(from)}`);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
@@ -48,7 +53,9 @@ export async function expectSignInRedirect(page: Page, from: string) {
 // Catalog fixtures. Each cart test creates its own product so tests that change
 // stock or prices can run in parallel; teardown deletes the whole category.
 export const FIXTURE_CATEGORY = "e2e-fixtures";
-const FIXTURE_IMAGE =
+/** A second fixture category, for tests that move a product between categories. */
+export const FIXTURE_CATEGORY_ALT = "e2e-fixtures-alt";
+export const FIXTURE_IMAGE =
   "https://images.unsplash.com/photo-1520975954732-35dd22299614?auto=format&fit=crop&w=1200&q=80";
 
 export type FixtureProduct = { id: string; slug: string; name: string; priceCents: number };
@@ -91,16 +98,56 @@ export async function setStock(productId: string, size: string, quantity: number
     where product_id = ${productId} and size = ${size}`;
 }
 
+export async function stockOf(productId: string, size: string): Promise<number> {
+  const [row] = await sql()`select quantity from product_stock
+    where product_id = ${productId} and size = ${size}`;
+  return row.quantity;
+}
+
+/**
+ * A checkout in progress holding `quantity` of one size, reserved the way
+ * checkout does it (the size's available stock goes down). It has no Stripe
+ * session and is two minutes old, so the customer's /checkout/cancel link
+ * releases it without calling Stripe.
+ */
+export async function holdStock(
+  userId: string,
+  product: FixtureProduct,
+  size: string,
+  quantity: number,
+) {
+  const db = sql();
+  const [order] = await db`
+    insert into orders (user_id, subtotal_cents, email, created_at, expires_at)
+    values (${userId}, ${product.priceCents * quantity}, 'e2e@example.com',
+      now() - interval '2 minutes', now() + interval '29 minutes')
+    returning id`;
+  await db`insert into order_items (order_id, product_id, product_name, size, unit_price_cents, quantity)
+    values (${order.id}, ${product.id}, ${product.name}, ${size}, ${product.priceCents}, ${quantity})`;
+  await db`update product_stock set quantity = quantity - ${quantity}
+    where product_id = ${product.id} and size = ${size}`;
+  return order.id as string;
+}
+
 export async function setPrice(productId: string, priceCents: number) {
   await sql()`update products set price_cents = ${priceCents} where id = ${productId}`;
 }
 
+/** Makes sure both fixture categories exist (names "E2E fixtures" and "E2E fixtures alt"). */
+export async function ensureFixtureCategories() {
+  await sql()`insert into categories (slug, name)
+    values (${FIXTURE_CATEGORY}, 'E2E fixtures'), (${FIXTURE_CATEGORY_ALT}, 'E2E fixtures alt')
+    on conflict (slug) do update set name = excluded.name`;
+}
+
 export async function deleteFixtureProducts() {
   const db = sql();
-  // Images, stock and cart lines go with the products (cascade).
+  const slugs = [FIXTURE_CATEGORY, FIXTURE_CATEGORY_ALT];
+  // Order lines keep their snapshots (product_id is set null); images, stock and
+  // cart lines go with the products (cascade).
   await db`delete from products where category_id in
-    (select id from categories where slug = ${FIXTURE_CATEGORY})`;
-  await db`delete from categories where slug = ${FIXTURE_CATEGORY}`;
+    (select id from categories where slug = any(${slugs}))`;
+  await db`delete from categories where slug = any(${slugs})`;
 }
 
 export type OrderStatus = "pending" | "paid" | "needs_review" | "failed" | "cancelled" | "expired";

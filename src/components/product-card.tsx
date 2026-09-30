@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { WishlistButton } from "@/components/wishlist-button";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, getStockState } from "@/lib/format";
 import type { Product } from "@/lib/products";
 
 export function ProductCard({
@@ -12,8 +12,16 @@ export function ProductCard({
   sizes?: string;
 }) {
   const [image] = product.images;
-  const soldOut = product.stock <= 0;
-  const eyebrow = soldOut ? "Sold out" : product.isNew ? "New" : null;
+  const stock = getStockState(product.stock);
+  // Availability outranks the "New" label: sold out, then low stock, then new.
+  const eyebrow =
+    stock.status === "out-of-stock"
+      ? "Sold out"
+      : stock.status === "low-stock"
+        ? stock.label
+        : product.isNew
+          ? "New"
+          : null;
 
   return (
     <article className="group relative bg-surface">
@@ -31,7 +39,13 @@ export function ProductCard({
         className="absolute top-2 right-2 z-10"
       />
       <div className="flex flex-col gap-1 px-3 pt-3 pb-6 md:px-4">
-        {eyebrow && <p className="eyebrow text-ink-muted">{eyebrow}</p>}
+        {eyebrow && (
+          <p
+            className={`eyebrow ${stock.status === "low-stock" ? "text-danger" : "text-ink-muted"}`}
+          >
+            {eyebrow}
+          </p>
+        )}
         <h3 className="text-body-sm">
           {/* Stretched link: the whole card is clickable. */}
           <Link

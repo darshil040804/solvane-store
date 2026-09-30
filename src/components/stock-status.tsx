@@ -6,8 +6,10 @@ const dotColor = {
   "out-of-stock": "bg-ink-subtle",
 } as const;
 
-export function StockStatus({ stock }: { stock: number }) {
-  const { status, label } = getStockState(stock);
+/** Stock dot and label; `label` replaces the standard wording (e.g. to name a size). */
+export function StockStatus({ stock, label: customLabel }: { stock: number; label?: string }) {
+  const { status, label: stateLabel } = getStockState(stock);
+  const label = customLabel ?? stateLabel;
 
   return (
     <p

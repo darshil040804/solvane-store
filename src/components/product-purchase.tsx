@@ -5,8 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type ReactNode } from "react";
 import { addToCart, type CartActionResult } from "@/app/cart/actions";
 import { SpinnerIcon } from "@/components/icons";
+import { StockStatus } from "@/components/stock-status";
 import { WishlistButton } from "@/components/wishlist-button";
+import { getStockState } from "@/lib/format";
 import type { ProductSize } from "@/lib/products";
+
+const isLow = (option: ProductSize) => getStockState(option.stock).status === "low-stock";
 
 function stockMessage(result: Extract<CartActionResult, { status: "insufficient-stock" }>) {
   const { available, inCart } = result;
@@ -40,6 +44,7 @@ export function ProductPurchase({
 
   const sizeOptions = sizes ?? [];
   const needsSize = sizeOptions.length > 0;
+  const selected = sizeOptions.find((option) => option.label === size);
 
   function addToBag() {
     if (pending) return;
@@ -119,6 +124,17 @@ export function ProductPurchase({
                 {!option.inStock && <span className="sr-only"> (sold out)</span>}
               </label>
             ))}
+          </div>
+          {/* Announced when the chosen size is running low. */}
+          <div aria-live="polite">
+            {selected && isLow(selected) && (
+              <div className="mt-3">
+                <StockStatus
+                  stock={selected.stock}
+                  label={`Only ${selected.stock} left in size ${selected.label}`}
+                />
+              </div>
+            )}
           </div>
         </fieldset>
       )}

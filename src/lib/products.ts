@@ -15,6 +15,8 @@ import type { Photo } from "@/lib/images";
 export type ProductSize = {
   label: string;
   inStock: boolean;
+  /** Units of this size available to buy now. */
+  stock: number;
 };
 
 /** Storefront view of a product, assembled from its category, images and stock rows. */
@@ -83,6 +85,7 @@ function toProduct(row: ProductRow): Product {
       : row.stock.map((size) => ({
           label: size.size,
           inStock: size.quantity > 0,
+          stock: size.quantity,
         })),
   };
 }

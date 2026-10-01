@@ -477,6 +477,14 @@
   }
 }
 
+/* Pages with a full-bleed hero (<main data-hero-page className="-mt-header">) sit
+   under a transparent header until the page scrolls. */
+body:has([data-hero-page]) .site-header:not([data-scrolled]) {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--color-on-ink);
+}
+
 /* Full-bleed hero that fills the viewport under a transparent header. */
 @utility hero {
   position: relative;

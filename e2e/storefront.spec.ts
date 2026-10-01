@@ -38,6 +38,67 @@ test.describe("homepage", () => {
     await expect(page).toHaveURL("/shop");
   });
 
+  test("the header is transparent over the hero, solid when scrolled, and transparent again at the top", async ({
+    page,
+  }) => {
+    const header = page.locator("header.site-header");
+    const background = () => header.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const textColor = () => header.evaluate((el) => getComputedStyle(el).color);
+    const heroTop = () =>
+      page.locator("section.hero").evaluate((el) => Math.round(el.getBoundingClientRect().top + window.scrollY));
+    const scrollTo = (y: number) => page.evaluate((top) => window.scrollTo(0, top), y);
+
+    await page.goto("/");
+    await expect(page.locator("section.hero img")).toBeVisible();
+    // On first paint: no solid bar, white text over the photo, hero under the header.
+    await expect.poll(background).toBe("rgba(0, 0, 0, 0)");
+    await expect.poll(textColor).toBe("rgb(255, 255, 255)");
+    expect(await heroTop()).toBe(0);
+
+    await scrollTo(700);
+    await expect.poll(background).toBe("rgb(255, 255, 255)");
+    await expect.poll(textColor).toBe("rgb(26, 26, 26)");
+
+    // Back at the very top it must be see-through again, with no white strip.
+    await scrollTo(0);
+    await expect.poll(background).toBe("rgba(0, 0, 0, 0)");
+    await expect.poll(textColor).toBe("rgb(255, 255, 255)");
+    expect(await heroTop()).toBe(0);
+  });
+
+  test("other pages keep a solid header and start below it", async ({ page }) => {
+    await page.goto("/shop");
+    const header = page.locator("header.site-header");
+    await expect.poll(() => header.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(255, 255, 255)");
+    // The bar itself (the header's 1px bottom border sits over the first pixel).
+    const headerBottom = await header
+      .locator(".header-bar")
+      .evaluate((el) => el.getBoundingClientRect().bottom);
+    const crumbTop = await page
+      .getByRole("navigation", { name: "Breadcrumb" })
+      .evaluate((el) => el.getBoundingClientRect().top);
+    expect(crumbTop).toBeGreaterThanOrEqual(headerBottom);
+  });
+
+  test("the header turns transparent when navigating to the homepage and solid when leaving it", async ({
+    page,
+  }) => {
+    const header = page.locator("header.site-header");
+    const background = () => header.evaluate((el) => getComputedStyle(el).backgroundColor);
+    await page.goto("/shop");
+    await expect.poll(background).toBe("rgb(255, 255, 255)");
+
+    await page.getByRole("button", { name: "Open menu" }).click();
+    await page.getByRole("dialog", { name: "Menu" }).getByRole("link", { name: "Home" }).click();
+    await expect(page).toHaveURL("/");
+    await expect.poll(background).toBe("rgba(0, 0, 0, 0)");
+
+    await page.getByRole("button", { name: "Open menu" }).click();
+    await page.getByRole("dialog", { name: "Menu" }).getByRole("link", { name: "Shop all" }).click();
+    await expect(page).toHaveURL("/shop");
+    await expect.poll(background).toBe("rgb(255, 255, 255)");
+  });
+
   test("every homepage link leads to a real page", async ({ page, request }) => {
     await page.goto("/");
     const hrefs = await page

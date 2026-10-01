@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useRef, useSyncExternalStore } from "react";
 import {
   BagIcon,
@@ -36,14 +35,11 @@ function subscribeToScroll(onChange: () => void) {
 }
 
 export function SiteHeader() {
-  // The homepage hero sits under a transparent header until the page scrolls.
-  const overlay = usePathname() === "/";
   const scrolled = useSyncExternalStore(
     subscribeToScroll,
     () => window.scrollY > 8,
     () => false,
   );
-  const transparent = overlay && !scrolled;
 
   const menuRef = useRef<HTMLDialogElement>(null);
   const openMenu = () => menuRef.current?.showModal();
@@ -51,12 +47,15 @@ export function SiteHeader() {
 
   return (
     <>
+      {/*
+        Solid by default. A page with a full-bleed hero marks itself with
+        data-hero-page, and globals.css then makes this header transparent until
+        the page scrolls (data-scrolled). Pure CSS, so it is right on first paint
+        and after client-side navigation, without reading the path in JavaScript.
+      */}
       <header
-        className={`fixed inset-x-0 top-0 z-40 border-b transition-colors duration-300 ease-standard ${
-          transparent
-            ? "border-transparent text-on-ink"
-            : "border-line bg-surface text-ink"
-        }`}
+        data-scrolled={scrolled ? "" : undefined}
+        className="site-header fixed inset-x-0 top-0 z-40 border-b border-line bg-surface text-ink transition-colors duration-300 ease-standard"
       >
         <div className="header-bar">
           <div className="flex items-center gap-1 md:gap-4">
@@ -111,8 +110,8 @@ export function SiteHeader() {
         </div>
       </header>
 
-      {/* Other pages start below the fixed header. */}
-      {!overlay && <div aria-hidden="true" className="h-header shrink-0" />}
+      {/* Pages start below the fixed header; hero pages pull themselves back up under it. */}
+      <div aria-hidden="true" className="h-header shrink-0" />
 
       <dialog
         ref={menuRef}

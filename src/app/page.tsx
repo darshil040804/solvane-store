@@ -22,7 +22,7 @@ export default async function Home() {
   ]);
 
   return (
-    <main className="flex-1">
+    <main data-hero-page className="-mt-header flex-1">
       <Hero />
       <Intro />
       <NewArrivals products={newArrivals} />

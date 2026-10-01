@@ -151,6 +151,15 @@ export default async function CheckoutPage(props: PageProps<"/checkout">) {
               Payment is handled securely by Stripe. You won&apos;t be charged until
               you confirm on the next page.
             </p>
+            {/* Portfolio demo: Stripe runs in test mode, so real cards are declined. */}
+            <p
+              role="note"
+              className="border-l-2 border-line-strong py-1 pl-3 text-caption text-ink-muted"
+            >
+              Portfolio demo: payments run in Stripe test mode and no real orders
+              are placed. Pay with card 4242 4242 4242 4242, any future expiry and
+              any CVC.
+            </p>
             <Link href="/collections/new-in" className="link-cta self-start text-body-sm">
               Continue shopping
             </Link>

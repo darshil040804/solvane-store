@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import {
   createProduct,
   expectSignInRedirect,
+  seedOrder,
   setPrice,
   setStock,
   signUp,
@@ -179,6 +180,32 @@ test.describe("stripe checkout", () => {
     await expect(payButton(page)).toBeEnabled();
     const [after] = await sql()`select status from orders where id = ${order.id}`;
     expect(after.status).toBe("cancelled");
+    expect(await stockOf(product)).toBe(2);
+  });
+
+  test("a leftover checkout whose Stripe session no longer exists doesn't block a new one", async ({
+    page,
+  }) => {
+    const product = await createProduct("checkout-stale", { "One size": 3 }, 30_000);
+    const { userId, email } = await customerWithBag(page, product);
+    // A pending order from another Stripe account's session, still holding one unit.
+    const stale = await seedOrder(userId, email, product, "pending", {
+      quantity: 1,
+      size: "One size",
+    });
+    await setStock(product.id, "One size", 2);
+
+    await page.goto("/checkout");
+    await payButton(page).click();
+    await page.waitForURL(/checkout\.stripe\.com/);
+
+    const [old] = await sql()`select status from orders where id = ${stale.orderId}`;
+    expect(old.status).toBe("cancelled");
+    const [fresh] = await sql()`select status, stripe_checkout_session_id as sid from orders
+      where user_id = ${userId} and id <> ${stale.orderId}`;
+    expect(fresh.status).toBe("pending");
+    expect(fresh.sid).toMatch(/^cs_test_/);
+    // 2 + 1 returned by the stale order - 1 reserved by the new checkout.
     expect(await stockOf(product)).toBe(2);
   });
 

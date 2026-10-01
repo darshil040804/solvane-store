@@ -162,7 +162,8 @@ test("releasing a checkout hold after an adjustment returns the held units", asy
 
   // The checkout is abandoned: the customer's cancel link releases the hold.
   await page.goto(`/checkout/cancel?order=${orderId}`);
-  await expect(page).toHaveURL(/\/checkout/);
+  // The review page sends a customer with an empty bag on to the bag.
+  await expect(page).toHaveURL(/\/(checkout|cart)(\?|$)/);
   const [order] = await sql()`select status from orders where id = ${orderId}`;
   expect(order.status).toBe("cancelled");
   expect(await stockOf(product.id, "M")).toBe(9);

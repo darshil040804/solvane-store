@@ -146,6 +146,7 @@ function productValues(fields: ProductFields) {
     details: fields.details,
     care: fields.care,
     isNew: fields.isNew,
+    audience: fields.audience,
   };
 }
 

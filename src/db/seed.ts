@@ -51,6 +51,7 @@ async function main() {
           color: product.color ?? null,
           priceCents: product.priceCents,
           isNew: product.isNew ?? false,
+          audience: product.audience,
           createdAt: new Date(now - index * 60_000),
         };
       }),
@@ -66,6 +67,7 @@ async function main() {
         color: sql`excluded.color`,
         priceCents: sql`excluded.price_cents`,
         isNew: sql`excluded.is_new`,
+        audience: sql`excluded.audience`,
         createdAt: sql`excluded.created_at`,
         updatedAt: sql`now()`,
       },

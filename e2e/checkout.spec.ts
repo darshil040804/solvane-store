@@ -85,8 +85,8 @@ test.describe("checkout entry", () => {
     const second = page.getByRole("listitem", { name: single.name });
     await expect(second).not.toContainText("Size:");
     await expect(second).toContainText(`Qty 1 × ${usd(32_000)}`);
-    await expect(page.getByTestId("checkout-subtotal")).toHaveText(usd(212_000));
-    await expect(page.getByTestId("checkout-total")).toHaveText(usd(212_000));
+    await expect(page.getByRole("main").getByTestId("checkout-subtotal")).toHaveText(usd(212_000));
+    await expect(page.getByRole("main").getByTestId("checkout-total")).toHaveText(usd(212_000));
     await expect(page.getByRole("heading", { name: /Your items/ })).toContainText("(3 items)");
     await expect(payButton(page)).toBeEnabled();
     await expect(page.getByRole("link", { name: "Edit bag" })).toHaveAttribute("href", "/cart");
@@ -107,7 +107,7 @@ test.describe("checkout entry", () => {
     await expect(alert).toContainText("Availability has changed");
     await expect(alert.getByRole("link", { name: "Review your bag" })).toBeVisible();
     await expect(page.getByRole("listitem", { name: product.name })).toContainText("Sold out");
-    await expect(page.getByTestId("checkout-total")).toHaveText(usd(0));
+    await expect(page.getByRole("main").getByTestId("checkout-total")).toHaveText(usd(0));
   });
 
   test("stock lost after the review loaded is reported, and the page refreshes", async ({ page }) => {
@@ -148,7 +148,7 @@ test.describe("checkout entry", () => {
     const product = await createProduct("checkout-cancelled", { "One size": 3 });
     await customerWithBag(page, product);
     await page.goto("/checkout?checkout=cancelled");
-    await expect(page.getByText("Checkout was cancelled and no payment was taken.")).toBeVisible();
+    await expect(page.getByRole("main").getByText("Checkout was cancelled and no payment was taken.")).toBeVisible();
     await expect(payButton(page)).toBeEnabled();
   });
 });
@@ -174,7 +174,7 @@ test.describe("stripe checkout", () => {
     // What Stripe's back link does.
     await page.goto(`/checkout/cancel?order=${order.id}`);
     await expect(page).toHaveURL("/checkout?checkout=cancelled");
-    await expect(page.getByText("Checkout was cancelled and no payment was taken.")).toBeVisible();
+    await expect(page.getByRole("main").getByText("Checkout was cancelled and no payment was taken.")).toBeVisible();
     // The bag is intact, and payment can be retried straight away.
     await expect(page.getByRole("listitem", { name: product.name })).toContainText("Qty 2");
     await expect(payButton(page)).toBeEnabled();
@@ -207,6 +207,31 @@ test.describe("stripe checkout", () => {
     expect(fresh.sid).toMatch(/^cs_test_/);
     // 2 + 1 returned by the stale order - 1 reserved by the new checkout.
     expect(await stockOf(product)).toBe(2);
+  });
+
+  test("no error message flashes while redirecting to Stripe", async ({ page }) => {
+    const product = await createProduct("checkout-noflash", { "One size": 2 });
+    await customerWithBag(page, product);
+
+    // Record any alert text that appears in the page before it navigates away.
+    const seen: string[] = [];
+    await page.exposeFunction("reportAlert", (text: string) => seen.push(text));
+    await page.goto("/checkout");
+    await page.evaluate(() => {
+      const main = document.querySelector("main")!;
+      const report = (window as unknown as { reportAlert: (t: string) => void }).reportAlert;
+      new MutationObserver(() => {
+        for (const alert of main.querySelectorAll('[role="alert"]')) {
+          const text = alert.textContent?.trim();
+          if (text) report(text);
+        }
+      }).observe(main, { subtree: true, childList: true, characterData: true });
+    });
+
+    await payButton(page).click();
+    await expect(page.getByRole("button", { name: "Preparing secure checkout…" })).toBeVisible();
+    await page.waitForURL(/checkout\.stripe\.com/);
+    expect(seen).toEqual([]);
   });
 
   test("the success page never marks an order paid by itself", async ({ page }) => {

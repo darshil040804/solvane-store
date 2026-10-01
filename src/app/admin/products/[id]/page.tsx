@@ -29,6 +29,7 @@ function formValues(product: AdminProduct): ProductFormValues {
     details: product.details.join("\n"),
     care: product.care,
     isNew: product.isNew,
+    audience: product.audience,
     images: product.images.map(({ url, alt }) => ({ url, alt })),
   };
 }

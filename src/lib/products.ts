@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, type SQL } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import {
@@ -19,6 +19,8 @@ export type ProductSize = {
   stock: number;
 };
 
+export type Audience = "women" | "men" | "unisex";
+
 /** Storefront view of a product, assembled from its category, images and stock rows. */
 export type Product = {
   id: string;
@@ -30,6 +32,7 @@ export type Product = {
   color: string | null;
   priceCents: number;
   isNew: boolean;
+  audience: Audience;
   category: { id: string; slug: string; name: string };
   /** The first image is the primary one used on product cards. */
   images: [Photo, ...Photo[]];
@@ -73,6 +76,7 @@ function toProduct(row: ProductRow): Product {
     color: row.color,
     priceCents: row.priceCents,
     isNew: row.isNew,
+    audience: row.audience,
     category: {
       id: row.category.id,
       slug: row.category.slug,
@@ -143,3 +147,79 @@ export const getRelatedProducts = cache(
     return rows.map(toProduct);
   },
 );
+
+/** What a product listing shows; every part is optional and they combine. */
+export type CatalogFilter = {
+  /** Women's listings include unisex pieces, and so do men's. */
+  audiences?: Audience[];
+  categorySlugs?: string[];
+  /** Free-text search over name, description, colour and category. */
+  query?: string;
+};
+
+const categoryIdsFor = (slugs: string[]) =>
+  db.select({ id: categories.id }).from(categories).where(inArray(categories.slug, slugs));
+
+/** Escapes LIKE wildcards so a search for "100%" matches literally. */
+const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+function catalogWhere(filter: CatalogFilter): SQL | undefined {
+  const conditions: SQL[] = [];
+  if (filter.audiences?.length) conditions.push(inArray(products.audience, filter.audiences));
+  if (filter.categorySlugs?.length) {
+    conditions.push(inArray(products.categoryId, categoryIdsFor(filter.categorySlugs)));
+  }
+  const query = filter.query?.trim();
+  if (query) {
+    const pattern = likePattern(query);
+    conditions.push(
+      or(
+        ilike(products.name, pattern),
+        ilike(products.description, pattern),
+        ilike(products.color, pattern),
+        inArray(
+          products.categoryId,
+          db.select({ id: categories.id }).from(categories).where(ilike(categories.name, pattern)),
+        ),
+      )!,
+    );
+  }
+  return conditions.length ? and(...conditions) : undefined;
+}
+
+/** Products matching the filter, newest first. */
+export async function getCatalogProducts(filter: CatalogFilter = {}) {
+  const rows = await db.query.products.findMany({
+    where: catalogWhere(filter),
+    with: productWith,
+    orderBy: [desc(products.createdAt)],
+  });
+  return rows.map(toProduct);
+}
+
+export type CategoryOption = { slug: string; name: string; count: number };
+
+/**
+ * Categories that have products for this filter (ignoring its own category
+ * choice), with counts, for the category filter on listings.
+ */
+export async function getCatalogCategories(filter: CatalogFilter = {}): Promise<CategoryOption[]> {
+  return db
+    .select({ slug: categories.slug, name: categories.name, count: count(products.id) })
+    .from(products)
+    .innerJoin(categories, eq(categories.id, products.categoryId))
+    .where(catalogWhere({ ...filter, categorySlugs: undefined }))
+    .groupBy(categories.slug, categories.name)
+    .orderBy(asc(categories.name));
+}
+
+/** Products by id, in the order given (ids that no longer exist are skipped). */
+export async function getProductsByIds(ids: string[]) {
+  if (ids.length === 0) return [];
+  const rows = await db.query.products.findMany({
+    where: inArray(products.id, ids),
+    with: productWith,
+  });
+  const byId = new Map(rows.map((row) => [row.id, toProduct(row)]));
+  return ids.map((id) => byId.get(id)).filter((product) => product !== undefined);
+}

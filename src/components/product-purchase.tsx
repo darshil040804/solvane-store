@@ -166,6 +166,7 @@ export function ProductPurchase({
           </button>
         )}
         <WishlistButton
+          productId={productId}
           productName={productName}
           className="size-12 shrink-0 border border-line-strong"
         />

@@ -20,6 +20,7 @@ export type ProductFormValues = {
   details: string;
   care: string;
   isNew: boolean;
+  audience: "women" | "men" | "unisex";
   images: { url: string; alt: string }[];
 };
 
@@ -42,6 +43,7 @@ const emptyValues: ProductFormValues = {
   details: "",
   care: "",
   isNew: false,
+  audience: "unisex",
   images: [{ url: "", alt: "" }],
 };
 
@@ -151,6 +153,7 @@ export function ProductForm(props: Props) {
       details: values.details.split("\n"),
       care: values.care,
       isNew: values.isNew,
+      audience: values.audience,
       images: values.images.map(({ url, alt }) => ({ url, alt })),
     };
     const stock = sized
@@ -341,6 +344,27 @@ export function ProductForm(props: Props) {
                     {category.name}
                   </option>
                 ))}
+              </select>
+            )}
+          </Field>
+          <Field
+            name="audience"
+            label="Audience"
+            hint="Unisex pieces appear in both the Women and Men collections."
+            error={errors.audience}
+          >
+            {(control) => (
+              <select
+                {...control}
+                value={values.audience}
+                onChange={(event) =>
+                  setField("audience", event.target.value as ProductFormValues["audience"])
+                }
+                className="field"
+              >
+                <option value="women">Women</option>
+                <option value="men">Men</option>
+                <option value="unisex">Unisex</option>
               </select>
             )}
           </Field>

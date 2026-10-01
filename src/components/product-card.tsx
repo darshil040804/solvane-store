@@ -35,8 +35,9 @@ export function ProductCard({
         />
       </div>
       <WishlistButton
+        productId={product.id}
         productName={product.name}
-        className="absolute top-2 right-2 z-10"
+        className="absolute top-2 right-2 z-10 bg-surface/80 backdrop-blur-sm hover:bg-surface"
       />
       <div className="flex flex-col gap-1 px-3 pt-3 pb-6 md:px-4">
         {eyebrow && (

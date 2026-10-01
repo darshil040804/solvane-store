@@ -13,18 +13,20 @@ import {
 } from "@/components/icons";
 
 const primaryNav = [
+  { label: "Home", href: "/" },
+  { label: "Shop all", href: "/shop" },
   { label: "New In", href: "/collections/new-in" },
   { label: "Women", href: "/collections/women" },
   { label: "Men", href: "/collections/men" },
   { label: "Bags & Small Leather Goods", href: "/collections/bags" },
   { label: "Shoes", href: "/collections/shoes" },
   { label: "Jewelry & Watches", href: "/collections/jewelry" },
-  { label: "Autumn–Winter 2026", href: "/collections/autumn-winter-2026" },
 ];
 
 const secondaryNav = [
   { label: "Services", href: "/services" },
   { label: "Contact us", href: "/contact" },
+  { label: "Wishlist", href: "/wishlist" },
   { label: "My account", href: "/account" },
 ];
 

@@ -4,6 +4,7 @@ import {
   check,
   index,
   integer,
+  pgEnum,
   pgTable,
   text,
   timestamp,
@@ -21,6 +22,9 @@ export const categories = pgTable("categories", {
     .notNull()
     .defaultNow(),
 });
+
+/** Who a product is for; drives the Women and Men collections. */
+export const productAudience = pgEnum("product_audience", ["women", "men", "unisex"]);
 
 export const products = pgTable(
   "products",
@@ -41,6 +45,7 @@ export const products = pgTable(
     // Integer cents; the store sells in USD only for now.
     priceCents: integer("price_cents").notNull(),
     isNew: boolean("is_new").notNull().default(false),
+    audience: productAudience("audience").notNull().default("unisex"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -51,6 +56,7 @@ export const products = pgTable(
   },
   (table) => [
     index("products_category_id_idx").on(table.categoryId),
+    index("products_audience_idx").on(table.audience),
     check("products_price_cents_non_negative", sql`${table.priceCents} >= 0`),
   ],
 );

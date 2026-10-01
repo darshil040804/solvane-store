@@ -21,8 +21,12 @@ export type ProductFields = {
   details: string[];
   care: string;
   isNew: boolean;
+  audience: Audience;
   images: { url: string; alt: string }[];
 };
+
+export const AUDIENCES = ["women", "men", "unisex"] as const;
+export type Audience = (typeof AUDIENCES)[number];
 
 /** Stock rows in display order; unsized products have a single ONE_SIZE row. */
 export type StockRows = { size: string; quantity: number }[];
@@ -111,6 +115,11 @@ export function parseProductFields(input: unknown): Parsed<ProductFields> {
   const care = text(data.care);
   if (care.length > 1000) errors.care = "Use 1,000 characters or fewer.";
 
+  const audience = text(data.audience);
+  if (!(AUDIENCES as readonly string[]).includes(audience)) {
+    errors.audience = "Choose who this piece is for.";
+  }
+
   const images = (Array.isArray(data.images) ? data.images : []).map((image) => {
     const row = record(image);
     return { url: text(row.url), alt: text(row.alt) };
@@ -143,6 +152,7 @@ export function parseProductFields(input: unknown): Parsed<ProductFields> {
       details,
       care,
       isNew: data.isNew === true,
+      audience: audience as Audience,
       images,
     },
   };

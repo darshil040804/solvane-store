@@ -44,13 +44,13 @@ function Hero() {
         fill
         preload
         sizes="100vw"
-        className="object-cover object-[50%_35%]"
+        // The subject stands left of centre; keep her in frame on tall screens.
+        className="object-cover object-[38%_30%]"
       />
       <div aria-hidden="true" className="scrim-top absolute inset-0" />
       <div aria-hidden="true" className="scrim-bottom absolute inset-0" />
 
       <div className="container-page relative flex flex-col items-center gap-4 pb-14 md:pb-20">
-        <p className="eyebrow">{hero.eyebrow}</p>
         <h1 id="hero-title" className="text-hero">
           {hero.title}
         </h1>
@@ -128,7 +128,7 @@ function FeaturedCollections() {
       {featuredCollections.map((collection) => (
         <Link
           key={collection.slug}
-          href={`/collections/${collection.slug}`}
+          href={collection.href}
           className="group flex flex-col"
         >
           <div className="media aspect-editorial">

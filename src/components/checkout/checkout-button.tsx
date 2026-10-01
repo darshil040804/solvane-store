@@ -1,19 +1,31 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { startCheckout } from "@/app/checkout/actions";
 import { SpinnerIcon } from "@/components/icons";
 
 /**
- * Starts Stripe Checkout from the review page. The server action redirects to
- * Stripe on success; otherwise it returns a message shown here so the customer
- * can retry.
+ * Starts Stripe Checkout from the review page. On success the server action
+ * returns the Stripe URL and the browser goes there, staying in the loading
+ * state until the page changes; otherwise it returns a message shown here.
  */
 export function CheckoutButton({ disabled }: { disabled: boolean }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [transitionPending, startTransition] = useTransition();
+  const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pending = transitionPending || redirecting;
+
+  // Coming back from Stripe with the back button can restore this page from
+  // the browser's cache, still mid-redirect; make the button usable again.
+  useEffect(() => {
+    const reset = (event: PageTransitionEvent) => {
+      if (event.persisted) setRedirecting(false);
+    };
+    window.addEventListener("pageshow", reset);
+    return () => window.removeEventListener("pageshow", reset);
+  }, []);
 
   return (
     <div className="flex flex-col gap-3">
@@ -26,8 +38,10 @@ export function CheckoutButton({ disabled }: { disabled: boolean }) {
           startTransition(async () => {
             try {
               const result = await startCheckout();
-              // Only reached when checkout didn't start; success redirects.
-              if (result.status === "unauthenticated") {
+              if (result.status === "redirect") {
+                setRedirecting(true);
+                window.location.assign(result.url);
+              } else if (result.status === "unauthenticated") {
                 router.push("/sign-in?redirectTo=%2Fcheckout");
               } else if (result.status === "empty") {
                 router.replace("/cart");

@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { ONE_SIZE } from "@/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { getCart } from "@/lib/cart";
@@ -15,6 +14,7 @@ import {
 import { appUrl, CHECKOUT_INTEGRATION_ID, getStripe } from "@/lib/stripe";
 
 export type CheckoutResult =
+  | { status: "redirect"; url: string }
   | { status: "unauthenticated" }
   | { status: "empty" }
   | { status: "cart-changed"; message: string }
@@ -23,7 +23,7 @@ export type CheckoutResult =
 /**
  * Starts Stripe Checkout for the signed-in customer's bag. Takes no input:
  * the customer comes from the session, and every price, total and stock level
- * from PostgreSQL. On success this redirects to Stripe.
+ * from PostgreSQL. On success it returns the Stripe Checkout URL to open.
  */
 export async function startCheckout(): Promise<CheckoutResult> {
   const session = await getSession();
@@ -113,5 +113,7 @@ export async function startCheckout(): Promise<CheckoutResult> {
     await releaseOrder(order.orderId, "failed");
     return { status: "error", message: "We couldn't start checkout. Please try again." };
   }
-  redirect(checkoutUrl);
+  // The browser navigates itself: a server redirect to an external URL reaches
+  // the client as a rejected action, which briefly showed an error first.
+  return { status: "redirect", url: checkoutUrl };
 }

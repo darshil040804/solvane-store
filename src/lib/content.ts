@@ -4,6 +4,7 @@ import { type Photo, unsplash } from "@/lib/images";
 
 export type Collection = {
   slug: string;
+  href: string;
   eyebrow: string;
   title: string;
   description: string;
@@ -18,14 +19,13 @@ export type ShopTile = {
 };
 
 export const hero = {
-  eyebrow: "Autumn–Winter 2026",
   title: "The Tailored Season",
   description:
     "Sharp outerwear, fluid tailoring and quiet leather pieces made to be worn for years.",
-  href: "/collections/autumn-winter-2026",
+  href: "/shop",
   image: unsplash(
-    "1485968579580-b6d095142e6e",
-    "Woman in a long checked wool coat walking along a city street",
+    "1781454230912-ba9ce1b46b56",
+    "Woman in an oatmeal wool coat and a black rib knit against a green wall",
     2400,
   ),
 };
@@ -33,7 +33,7 @@ export const hero = {
 export const leatherFeature = {
   eyebrow: "Men",
   title: "Leather, reconsidered",
-  href: "/collections/leather",
+  href: "/collections/men?category=ready-to-wear",
   image: unsplash(
     "1520975954732-35dd22299614",
     "Man in a black leather biker jacket and sunglasses crouching on a rooftop ledge",
@@ -45,7 +45,7 @@ export const knitwearFeature = {
   title: "Soft structure for colder days",
   description:
     "Cashmere, merino and hand-finished cable knits in a palette of undyed neutrals.",
-  href: "/collections/knitwear",
+  href: "/shop?category=ready-to-wear",
   image: unsplash(
     "1558769132-cb1aea458c5e",
     "Rail of cream and camel knit sweaters beside dried pampas grass",
@@ -56,6 +56,7 @@ export const knitwearFeature = {
 export const featuredCollections: Collection[] = [
   {
     slug: "evening",
+    href: "/collections/women?category=ready-to-wear",
     eyebrow: "Women",
     title: "The Evening Collection",
     description: "Liquid silhouettes cut to move.",
@@ -66,6 +67,7 @@ export const featuredCollections: Collection[] = [
   },
   {
     slug: "tailoring",
+    href: "/collections/men?category=ready-to-wear",
     eyebrow: "Men",
     title: "Modern Tailoring",
     description: "Soft-shouldered suiting in wool and flannel.",

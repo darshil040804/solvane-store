@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Jost } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { WishlistProvider } from "@/components/wishlist-provider";
 import "./globals.css";
 
 // Geometric sans used for everything; mapped to --font-sans in globals.css.
@@ -27,9 +28,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${jost.variable} h-full [&:has(dialog[open])]:overflow-hidden`}
     >
       <body className="min-h-full flex flex-col bg-surface text-ink">
-        <SiteHeader />
-        {children}
-        <SiteFooter />
+        <WishlistProvider>
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+        </WishlistProvider>
       </body>
     </html>
   );

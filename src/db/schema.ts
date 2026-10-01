@@ -5,3 +5,4 @@ export * from "./auth-schema";
 export * from "./cart-schema";
 export * from "./catalog-schema";
 export * from "./order-schema";
+export * from "./wishlist-schema";
